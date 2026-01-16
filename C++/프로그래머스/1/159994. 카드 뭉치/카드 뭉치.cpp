@@ -4,25 +4,22 @@
 using namespace std;
 
 string solution(vector<string> cards1, vector<string> cards2, vector<string> goal) {
-    string answer = "";
     int j = 0, k = 0;
     
-    for (size_t i = 0; i < goal.size(); ++i) {
-        if (goal[i] == cards1[j]) {
+    for (const string& word : goal) {
+        // &&는 앞의 조건이 거짓이면 뒤의 조건을 검사하지 않으므로 size체크를 먼저해야 인덱스가 범위를 벗어나는 일이 없다. 
+        if (j < cards1.size() && word == cards1[j]) {
             j++;
             continue;
         }
-        else if (goal[i] == cards2[k]) {
+        else if (k < cards2.size() && word == cards2[k]) {
             k++;
             continue;
         }
         else {
-            answer = "No";
-            return answer;
+            return "No";
         }
     }
     
-    answer = "Yes";
-    
-    return answer;
+    return "Yes";
 }
