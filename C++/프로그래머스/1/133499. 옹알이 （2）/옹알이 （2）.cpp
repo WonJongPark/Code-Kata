@@ -1,63 +1,73 @@
+// 챗봇의 최적화 코드
 #include <string>
-#include <string_view>
 #include <vector>
+#include <string_view>
 
 using namespace std;
 
 int solution(vector<string> babbling) {
-    int pronounceCount = 0;
-    vector<string> canPronounce = {"", "aya", "ye", "woo", "ma"};
+    int answer = 0;
     
-    for(const string& word : babbling) {
-        string_view sv = word;
-        string_view lastPronounce = "";
-        
-        bool isPossible = true;
-        
-        while(!sv.empty()) {
-            if(sv.substr(0, 3) == canPronounce[1]) {
-                if(lastPronounce == canPronounce[1]) {
-                    isPossible = false;
-                    break;
+    // 1. 발음 가능한 단어들을 배열(또는 벡터)로 관리합니다.
+    // 데이터와 로직을 분리하여 확장성이 매우 좋습니다.
+    const string_view valids[] = {"aya", "ye", "woo", "ma"};
+
+    for (string_view sv : babbling) {
+        // 직전 발음의 인덱스를 저장 (-1: 없음, 0:aya, 1:ye ...)
+        // 문자열을 저장하는 것보다 정수(int) 비교가 훨씬 빠릅니다.
+        int last_idx = -1; 
+        bool is_possible = true;
+
+        while (!sv.empty()) {
+            bool matched = false;
+
+            // 2. 4개의 발음 패턴을 순회하며 확인
+            for (int i = 0; i < 4; ++i) {
+                string_view target = valids[i];
+                size_t len = target.size();
+
+                // 길이 체크 & 내용 비교
+                if (sv.size() >= len && sv.substr(0, len) == target) {
+                    
+                    // 3. 연속 발음 금지 조건 체크
+                    if (last_idx == i) {
+                        is_possible = false;
+                        break; 
+                    }
+
+                    // 4. 발음 성공: 앞부분 자르기 (O(1) 속도)
+                    sv.remove_prefix(len);
+                    last_idx = i; // 현재 발음 인덱스 기록
+                    matched = true;
+                    break; // 매칭되었으므로 내부 for문 탈출 -> while문 처음으로
                 }
-                sv.remove_prefix(3);
-                lastPronounce = canPronounce[1];
             }
-            else if(sv.substr(0, 2) == canPronounce[2]) {
-                if(lastPronounce == canPronounce[2]) {
-                    isPossible = false;
-                    break;
-                }
-                sv.remove_prefix(2);
-                lastPronounce = canPronounce[2];
-            }
-            else if(sv.substr(0, 3) == canPronounce[3]) {
-                if(lastPronounce == canPronounce[3]) {
-                    isPossible = false;
-                    break;
-                }
-                sv.remove_prefix(3);
-                lastPronounce = canPronounce[3];
-            }
-            else if(sv.substr(0, 2) == canPronounce[4]) {
-                if(lastPronounce == canPronounce[4]) {
-                    isPossible = false;
-                    break;
-                }
-                sv.remove_prefix(2);
-                lastPronounce = canPronounce[4];
-            }
-            else {
-                isPossible = false;
+
+            // 이번 턴에 4개 중 아무것도 매칭되지 않았거나, 연속 발음 규칙을 어겼다면 실패
+            if (!matched || !is_possible) {
+                is_possible = false;
                 break;
             }
         }
-        
-        if(isPossible) {
-            pronounceCount++;
-        }
+
+        if (is_possible) answer++;
     }
-    
-    
-    return pronounceCount;
+
+    return answer;
 }
+
+/* 이 코드가 "최적"인 이유
+1. 데이터 주도 (Data-Driven):
+    - if-else 도배 대신 valids 배열을 사용했습니다.
+      만약 "chu"라는 옹알이가 추가된다면, valids 배열에 한 줄만 추가하면 됩니다. 코드를 뜯어고칠 필요가 없죠.
+
+2. std::string_view의 완벽한 활용:
+    - 매개변수 복사가 전혀 일어나지 않습니다.
+    - remove_prefix를 사용하여 메모리 할당 없이 포인터 이동만으로 문자열을 자릅니다.
+
+3. 빠른 비교 (last_idx):
+    - 이전 발음을 문자열("aya")로 저장하는 대신, 인덱스(0)로 저장했습니다. 컴퓨터에게 문자열 비교보다 정수 비교가 훨씬 가볍고 빠릅니다.
+    
+4.안전성:
+    - sv.size() >= len 조건을 명시하여 인덱스 범위를 벗어나는 잠재적인 오류를 방지했습니다.
+*/
