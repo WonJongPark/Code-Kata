@@ -1,41 +1,79 @@
+// 챗 봇의 개선 코드
 #include <string>
 #include <vector>
 
 using namespace std;
 
 int solution(int n, vector<int> lost, vector<int> reserve) {
+    // 1. 모든 학생이 체육복을 1개씩 가지고 있다고 가정 (인덱스 편의를 위해 n+2 크기 할당)
+    // 0번과 n+1번 인덱스는 더미(dummy)로 사용하여 범위 체크 조건을 줄입니다.
+    vector<int> students(n + 2, 1);
+
+    // 2. 도난당한 학생 처리 (체육복 개수 감소)
+    for (int l : lost) {
+        students[l]--;
+    }
+
+    // 3. 여벌 가져온 학생 처리 (체육복 개수 증가)
+    // *중요*: 여벌이 있는데 도난당한 학생은 여기서 1 - 1 + 1 = 1이 되어 
+    // 자동으로 본인 옷을 입게 되며, 빌려줄 수 없는 상태가 됩니다.
+    for (int r : reserve) {
+        students[r]++;
+    }
+
+    // 4. 체육복 빌려주기 (탐욕법)
+    for (int i = 1; i <= n; ++i) {
+        // 체육복이 없는 학생(0)을 발견하면
+        if (students[i] == 0) {
+            // 앞 번호 학생(i-1)에게 여벌(2)이 있는지 확인
+            if (students[i - 1] == 2) {
+                students[i - 1]--; // 빌려줌
+                students[i]++;     // 받음
+            }
+            // 뒷 번호 학생(i+1)에게 여벌(2)이 있는지 확인
+            else if (students[i + 1] == 2) {
+                students[i + 1]--; // 빌려줌
+                students[i]++;     // 받음
+            }
+        }
+    }
+
+    // 5. 체육복이 1개 이상인 학생 수 세기
     int answer = 0;
-    vector<bool> isLost(n + 2, false);
-    vector<bool> canReserve(n + 2, false);
-    
-    for(int l : lost) isLost[l] = true;
-    for(int r : reserve) canReserve[r] = true;
-    
-    for(int i = 1; i <= n; ++i) {
-        if(isLost[i] && canReserve[i]) {
-            isLost[i] = false;
-            canReserve[i] = false;
-        }
-    }
-    
-    for(int i = 1; i <= n; ++i) {
-        if(isLost[i]) {
-            if(canReserve[i - 1]) {
-                isLost[i] = false;
-                canReserve[i - 1] = false;
-            }
-            else if(canReserve[i + 1]) {
-                isLost[i] = false;
-                canReserve[i + 1] = false;
-            }
-        }
-    }
-    
-    for(size_t i = 1; i <= n; ++i) {
-        if(!isLost[i]) {
+    for (int i = 1; i <= n; ++i) {
+        if (students[i] >= 1) {
             answer++;
         }
     }
-    
+
     return answer;
 }
+
+/*
+### 해결 전략
+
+1. 초기화: 모든 학생이 체육복을 1벌씩 가지고 있다고 가정합니다.
+2. 도난 및 여벌 반영:
+    * `lost`에 있는 학생은 -1을 합니다.
+    * `reserve`에 있는 학생은 +1을 합니다.
+    * 이렇게 하면, 여벌이 있는데 도난당한 학생은 자동으로 1(본인 것 입음)이 되어 빌려줄 수도, 빌릴 필요도 없는 상태가 됩니다. (이 부분이 핵심입니다!)
+
+
+3. 빌려주기 (Greedy): 1번 학생부터 N번 학생까지 순서대로 확인하며 체육복이 없는(0) 학생 앞뒤에 여벌이 있는(2) 학생이 있는지 확인합니다.
+
+### 코드 설명 및 개선된 점
+
+1. `vector<int> students(n + 2, 1)`:
+    * `bool` 배열 두 개 대신, 학생이 가진 체육복의 '개수'를 저장하는 하나의 배열을 사용했습니다.
+    * 기본값을 1로 두고 `lost`면 빼고, `reserve`면 더하는 방식입니다.
+    * 이 방식의 가장 큰 장점은 **"여벌이 있지만 도난당한 학생"** (계산 결과: 1)이 자동으로 처리된다는 것입니다. 별도의 예외 처리가 필요 없죠.
+
+2. `n + 2` 크기 할당:
+    * 배열의 크기를 `n`보다 조금 넉넉하게 잡아서 `students[i-1]`이나 `students[i+1]`을 할 때 배열 범위를 벗어나는지 검사하는 `if` 문을 줄였습니다.
+    (0번 인덱스와 n+1번 인덱스는 0이 아닌 값으로 초기화되어 있어도 로직상 접근하지 않거나 영향이 없습니다. 여기선 1로 초기화되지만 로직 흐름상 안전합니다.)
+
+
+3. 순차적 확인 (Greedy):
+    * 작성해주신 코드에서는 `lost` 벡터를 순회했지만, 이 벡터가 정렬되어 있다는 보장이 없으면 최적의 해를 찾지 못할 수도 있습니다.
+    * 1번 학생부터 N번 학생까지 차례대로 훑으면서 처리하는 것이 가장 안전합니다.
+*/
