@@ -1,37 +1,61 @@
+// 챗봇의 개선사항
 #include <string>
 #include <vector>
-#include <map>
 
 using namespace std;
 
 string solution(string s, string skip, int index) {
     string answer = "";
-    // skip에 있는 문자는 +1
-    // s[i] = s[i] + index + (s[i] ~ (s[i] + index 사이의 skip 수))
-    map<char, bool> skipChar;
-    for(char c : skip) {
-        skipChar[c] = true;
-    }
+    string validChars = "";
     
-    for(char c : s) {
-        for(int i = 0; i < index; ++i) {
-            c++;
-            if(c > 'z') {
-                c = 'a';
-            }
-            
-            while(skipChar.find(c) != skipChar.end()){
-                c++;
-                if(c > 'z') {
-                    c = 'a';
-                }
-            }
+    // 1. skip에 없는 문자들만 걸러내서 새로운 알파벳 문자열 생성
+    for (char c = 'a'; c <= 'z'; ++c) {
+        // skip 문자열에서 c를 찾지 못했다면(npos) 유효한 문자
+        if (skip.find(c) == string::npos) {
+            validChars += c;
         }
-        answer += c;
     }
     
-
-    
+    // 2. 변환 작업
+    for (char c : s) {
+        // validChars 내에서 현재 문자 c의 위치(인덱스)를 찾음
+        int currentPos = validChars.find(c);
+        
+        // index만큼 이동하되, 길이로 나눈 나머지(%)를 사용하여 순환 처리
+        int nextPos = (currentPos + index) % validChars.length();
+        
+        answer += validChars[nextPos];
+    }
     
     return answer;
 }
+/*
+이 문제를 해결하는 **가장 직관적이고 실수를 줄일 수 있는 최적의 방법**은 **"유효한 알파벳만 남긴 문자열"**을 미리 만드는 것입니다.
+
+이전 방식처럼 매번 이동할 때마다 `skip` 여부를 검사하고 반복문(`while`)을 돌리는 것은 코드가 복잡해지고, 'z'를 넘어갈 때의 처리가 까다로울 수 있습니다.
+
+대신, **애초에 `skip` 문자가 빠진 알파벳 목록**을 만들어 두고, 거기서 인덱스만 계산하면 훨씬 깔끔하게 풀 수 있습니다.
+
+### 💡 최적화 전략: "나만의 알파벳 체계 만들기"
+
+1. **필터링**: 'a'부터 'z'까지 돌면서 `skip`에 포함되지 않은 문자들만 모아 새로운 문자열(`validChars`)을 만듭니다.
+2. **인덱스 계산**: `s`의 문자가 `validChars`의 몇 번째에 있는지 찾습니다.
+3. **모듈러 연산**: `(현재 위치 + index) % validChars길이`를 계산하면, 문자열 길이를 넘어갔을 때 자동으로 앞으로 돌아옵니다. (`if`문 불필요)
+
+---
+
+
+### 📝 왜 이 코드가 최적일까요?
+
+1. **논리적 단순함**: `while` 루프나 복잡한 `if` 조건 없이, 단순한 산수(덧셈과 나머지 연산)로 해결됩니다.
+2. **`z` -> `a` 처리의 자동화**: `% validChars.length()` 코드가 배열의 끝을 넘어가면 자동으로 0번 인덱스(처음)로 돌려줍니다. 예를 들어 길이가 20인데 22번째를 찾으면 자동으로 2번째 문자를 가리키게 됩니다.
+3. **확장성**: 만약 `skip` 조건이 바뀌거나 알파벳이 아니라 숫자 등으로 바뀌어도 로직을 그대로 사용할 수 있습니다.
+
+### 🚀 다음 단계
+
+이 방식은 **"순환하는 구조"**나 **"특정 요소를 제외한 이동"** 문제에서 매우 강력한 패턴입니다. (예: 요일 계산, 카드 돌리기 등)
+
+이 코드를 복사해서 제출해 보시고, `validChars`가 어떻게 생성되는지 머릿속으로 한번 그려보세요. 이 패턴을 익혀두시면 나중에 훨씬 어려운 구현 문제에서도 시간을 많이 아낄 수 있습니다!
+
+혹시 `%` (나머지 연산자)의 작동 원리에 대해 더 자세한 설명이 필요하다면 말씀해 주세요!
+*/
