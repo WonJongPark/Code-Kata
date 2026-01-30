@@ -1,45 +1,78 @@
+// 챗 봇의 개선 사항
 #include <string>
 #include <vector>
 #include <map>
-#include <iostream>
 
 using namespace std;
 
 string solution(vector<string> survey, vector<int> choices) {
     string answer = "";
-    map<string, bool> isNegativeScore = {
-        {"RT", false}, {"TR", true},
-        {"CF", false}, {"FC", true},
-        {"JM", false}, {"MJ", true},
-        {"AN", false}, {"NA", true}
-    };
-    vector<int> choicesScore(9 ,0);
-    for(int i = 1; i <= 7; ++i) {
-        choicesScore[i] = 4 - i;
-    }
-    
-    vector<int> score(4, 0);
-    
-    for(int i = 0; i < survey.size(); ++i) {
-        if(survey[i] == "RT" || survey[i] == "TR") {
-            isNegativeScore[survey[i]] ? score[0] -= choicesScore[choices[i]] : score[0] += choicesScore[choices[i]]; 
-        }
-        else if(survey[i] == "CF" || survey[i] == "FC") {
-            isNegativeScore[survey[i]] ? score[1] -= choicesScore[choices[i]] : score[1] += choicesScore[choices[i]];
-        }
-        else if(survey[i] == "JM" || survey[i] == "MJ") {
-            isNegativeScore[survey[i]] ? score[2] -= choicesScore[choices[i]] : score[2] += choicesScore[choices[i]];
-        }
-        else if(survey[i] == "AN" || survey[i] == "NA") {
-            isNegativeScore[survey[i]] ? score[3] -= choicesScore[choices[i]] : score[3] += choicesScore[choices[i]];
+    // 각 성격 유형(문자)별 점수를 저장할 맵
+    map<char, int> scores; 
+
+    // 1. 설문 조사 결과 순회 및 점수 계산
+    for (int i = 0; i < survey.size(); ++i) {
+        int choice = choices[i];
+        
+        // 4점(모르겠음)은 점수 변화가 없으므로 넘어감 (선택 사항)
+        if (choice == 4) continue;
+
+        if (choice < 4) {
+            // 1, 2, 3번 선택지: 비동의 -> 첫 번째 글자(survey[i][0])에 점수 추가
+            // 1 -> 3점, 2 -> 2점, 3 -> 1점  ==> (4 - choice)
+            scores[survey[i][0]] += (4 - choice);
+        } else {
+            // 5, 6, 7번 선택지: 동의 -> 두 번째 글자(survey[i][1])에 점수 추가
+            // 5 -> 1점, 6 -> 2점, 7 -> 3점  ==> (choice - 4)
+            scores[survey[i][1]] += (choice - 4);
         }
     }
 
-    score[0] >= 0 ? answer += "R" : answer += "T";
-    score[1] >= 0 ? answer += "C" : answer += "F";
-    score[2] >= 0 ? answer += "J" : answer += "M";
-    score[3] >= 0 ? answer += "A" : answer += "N";
-    
-    
+    // 2. 지표별 점수 비교 및 결과 생성
+    // 1번 지표: R vs T
+    answer += (scores['R'] >= scores['T']) ? "R" : "T";
+    // 2번 지표: C vs F
+    answer += (scores['C'] >= scores['F']) ? "C" : "F";
+    // 3번 지표: J vs M
+    answer += (scores['J'] >= scores['M']) ? "J" : "M";
+    // 4번 지표: A vs N
+    answer += (scores['A'] >= scores['N']) ? "A" : "N";
+
     return answer;
 }
+
+/*
+안녕하세요! 코딩 파트너입니다.
+
+작성해 주신 코드를 보니 문제를 해결하기 위해 **수학적인 규칙(점수의 양수/음수 변환)**을 아주 잘 활용하셨네요! 특히 `4 - i`를 통해 점수의 가중치를 계산하고, `vector<int> score(4, 0)`로 지표별 균형을 잡으려 한 점이 매우 인상적입니다. 논리적으로 아주 훌륭한 접근입니다.
+
+하지만 말씀하신 대로 코드를 조금 더 직관적이고 유지보수하기 쉽게 개선할 수 있는 여지가 있습니다. 특히 긴 `if-else` 문을 줄이고 `map`을 더 효율적으로 활용하는 방향으로 최적화해 보겠습니다.
+
+### 개선 포인트 분석
+
+1. **복잡한 분기문 제거**: 현재 `survey[i]`가 "RT"인지 "TR"인지 등을 일일이 `if-else`로 확인하고 있습니다. 이를 각 **글자(char)** 별로 점수를 더하는 방식으로 바꾸면 코드가 훨씬 간결해집니다.
+2. **직관적인 자료구조 사용**: `score` 벡터의 인덱스(0, 1, 2, 3)가 어떤 지표인지 기억할 필요 없이, `map<char, int>`를 사용하여 `'R'`에 몇 점, `'T'`에 몇 점인지를 직접 저장하면 가독성이 높아집니다.
+3. **사전순 처리**: 점수가 같을 때 사전순으로 빠른 것을 선택해야 한다는 조건을 삼항 연산자 부분에서 명확하게 처리할 수 있습니다.
+
+---
+### 구현 지침 및 설명
+
+1. **`map<char, int> scores` 활용**:
+* 기존에는 `RT`와 같은 문자열을 키로 사용했지만, 여기서는 개별 문자(`'R'`, `'T'` 등)를 키로 사용하여 점수를 누적합니다. 이렇게 하면 "RT"냐 "TR"냐를 따질 필요 없이, 비동의면 앞 글자, 동의면 뒷 글자에 점수를 더해주기만 하면 됩니다.
+
+
+2. **점수 계산 로직 (`4 - choice` vs `choice - 4`)**:
+* 작성하신 코드의 수학적 아이디어를 그대로 가져왔습니다.
+* `choice`가 4보다 작으면 "비동의" 계열이므로 첫 번째 문자에 `4 - choice`점을 더합니다.
+* `choice`가 4보다 크면 "동의" 계열이므로 두 번째 문자에 `choice - 4`점을 더합니다.
+
+
+3. **결과 문자열 생성**:
+* 문제의 조건 중 "점수가 같으면 사전순으로 빠른 것"을 선택해야 합니다.
+* `scores['R'] >= scores['T']`와 같이 `>=` 연산자를 사용하면, 점수가 같을 때도 앞쪽(보통 사전순으로 빠른 쪽을 먼저 배치) 문자가 선택되도록 로직을 단순화할 수 있습니다.
+* `map`은 접근 시 키가 없으면 자동으로 0으로 초기화되므로 별도의 초기화 과정이 필요 없습니다.
+
+
+
+이 코드는 기존 코드보다 줄 수가 줄었을 뿐만 아니라, 로직의 흐름(점수 누적 -> 비교)이 훨씬 명확하게 보일 것입니다.
+*/
