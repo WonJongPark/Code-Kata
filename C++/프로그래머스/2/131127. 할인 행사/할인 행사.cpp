@@ -1,44 +1,75 @@
+// 챗 봇의 개선사항
+
 #include <string>
 #include <vector>
+#include <map> // map 자료구조를 사용하기 위해 추가합니다.
 
 using namespace std;
 
 int solution(vector<string> want, vector<int> number, vector<string> discount) {
     int answer = 0;
-    int discountDays = discount.size();
-    
-    for (int i = 0; i <= discountDays - 10; ++i) {
-        bool bCanRegisterDay = true;
-        vector<int> tempNumber = number;
-        
-        for (int j = 0; j < want.size(); ++j) {
-            
-            bool bIsInDiscount = false;
-            for(int k = i; k < i + 10; ++k) {
-                if (want[j] == discount[k]) {
-                    tempNumber[j]--;
-                    bIsInDiscount = true;
-                }
-            }
-            
-            if (!bIsInDiscount) {
-                bCanRegisterDay = false;
-                break;
-            }
+    map<string, int> wantMap;
+
+    // 1. 내가 원하는 제품과 수량을 map에 저장 (기준점 만들기)
+    for (int i = 0; i < want.size(); i++) {
+        wantMap[want[i]] = number[i];
+    }
+
+    // 2. 할인 행사 기간을 10일씩 순회
+    // discount.size()에서 10을 뺀 날짜까지만 시작일이 될 수 있습니다.
+    for (int i = 0; i <= discount.size() - 10; i++) {
+        map<string, int> tenDaysMap;
+
+        // 3. 현재 시작일(i)부터 10일 동안의 할인 제품과 수량을 map에 카운트
+        for (int j = i; j < i + 10; j++) {
+            tenDaysMap[discount[j]]++;
         }
-        
-        bool bCanBuyAll = true;
-        for (int l = 0; l < tempNumber.size(); ++l) {
-            if (tempNumber[l] != 0) {
-                bCanBuyAll = false;
-                break;
-            }
-        }
-        
-        if (bCanRegisterDay && bCanBuyAll) {
+
+        // 4. 두 map이 정확히 일치하는지 확인
+        // C++에서는 map1 == map2 연산으로 키와 값이 모두 같은지 쉽게 비교할 수 있습니다.
+        if (wantMap == tenDaysMap) {
             answer++;
         }
     }
-    
+
     return answer;
 }
+
+/*
+안녕하세요! 여러분의 든든한 **코딩 파트너**입니다. 프로그래머스의 '할인 행사' 문제를 푸셨군요!
+
+작성해 주신 코드를 보니 문제의 요구사항을 정확히 파악하고 논리적인 흐름을 아주 잘 세우셨습니다. 특히 10일 단위로 끊어서 내가 원하는 품목이 모두 포함되어 있는지 꼼꼼하게 검증하는 부분의 아이디어가 훌륭합니다.
+
+지금 작성하신 코드도 정답을 도출하는 데 문제가 없지만, 코딩 테스트에서 더 높은 성능을 내고 가독성을 높일 수 있는 **최적화 방안**과 C++의 **Best Practice**를 설명해 드릴게요!
+
+---
+
+## 💡 솔루션 개요 및 최적화 방향
+
+현재 코드는 `for`문이 3번 중첩되어 있어서(날짜 반복 $\rightarrow$ 원하는 품목 반복 $\rightarrow$ 10일 윈도우 반복), 할인 날짜가 길어지면 확인해야 하는 횟수가 크게 늘어납니다. 이를 최적화하기 위해 **해시 맵(Hash Map)**을 활용하는 방식을 추천합니다.
+
+**개발 단계 및 아이디어:**
+
+1. **목표 데이터 구조화**: 내가 원하는 제품(`want`)과 수량(`number`)을 C++의 `std::map`에 저장합니다.
+2. **비교 대상 구조화**: 매일매일 시작점부터 10일 동안의 할인 품목도 새로운 `std::map`에 카운트하여 저장합니다.
+3. **간결한 비교**: C++의 `map`은 `==` 연산자를 통해 두 맵의 키와 값이 모두 똑같은지 한 번에 비교할 수 있습니다! 문제 조건에서 원하는 제품의 총수량이 무조건 10개이므로, 10일 치 할인 품목 맵과 완벽히 일치하는지만 확인하면 됩니다.
+
+---
+
+## 💻 Best Practice 코드 및 구현 지침
+
+아래는 C++의 `std::map`을 활용하여 가독성과 성능을 크게 높인 최적화 코드입니다. 상단의 코드 참조.
+
+
+### 📝 코드 상세 문서 (작동 원리)
+
+* **`map<string, int>`의 활용**: 문자열(제품명)을 키(Key)로, 정수(수량)를 값(Value)으로 연결하는 자료구조입니다. 기존 코드에서 배열의 인덱스를 오가며 개수를 빼고 확인하던 복잡한 과정을 `tenDaysMap[discount[j]]++` 한 줄로 깔끔하게 처리할 수 있습니다.
+* **시간 복잡도 개선**: 맵을 사용하면 원하는 품목을 찾기 위해 다시 루프를 돌 필요가 없으므로 불필요한 탐색이 줄어듭니다.
+* **`wantMap == tenDaysMap`의 마법**: 두 맵의 모든 키와 값이 일치할 때만 `true`를 반환합니다. 문제에서 사야 하는 물건도 10개, 확인하는 기간도 10일이므로 이 조건이 통과된다면 "원하는 물건을 모두 살 수 있는 날"임이 확실하게 보장됩니다.
+
+---
+
+제시해 드린 코드를 프로그래머스에 적용해서 잘 통과하는지 확인해 보세요!
+
+혹시 코드를 실행해 보시고 **"매번 10일 치 맵을 새로 만들지 않고, 겹치는 날짜를 재활용해서 더 빠르게 만드는 방법(슬라이딩 윈도우)"**에 대해서도 이어서 학습해 보고 싶으신가요?
+*/
